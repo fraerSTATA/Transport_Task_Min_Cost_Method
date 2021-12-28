@@ -22,23 +22,15 @@ namespace Fogel
     /// </summary>
     public partial class MainWindow : Window
     {
+        MatrixN minich;
         public MainWindow()
         {
-            
-             InitializeComponent();
-            int j = 1;
-            Grid DataGrid = CreateGridDynamic();
-            Grid.SetRow(DataGrid, j);
-            Grid.SetColumnSpan(DataGrid, 2);
-            MainGrid.Children.Add(DataGrid);      
-            var minich = new MatrixN();
-            minich.TakeMatrixFromXML("C:\\Users\\bym20\\OneDrive\\Рабочий стол\\Fogel\\Matrix.xml");
-      
-            MinCost.PutMatrixToGrid(DataGrid, minich);
 
 
-           MinCost min = new MinCost();
-           List<Grid> a = min.SolveTask(minich,this);
+            InitializeComponent();
+
+          
+            /*
            foreach(var item in a)
             {
                 j++;
@@ -55,7 +47,7 @@ namespace Fogel
             b.Margin = new Thickness(50, 40, 0, 30);
             Grid.SetRow(b, j);
             Grid.SetColumnSpan(b, 2);
-            MainGrid.Children.Add(b);
+            MainGrid.Children.Add(b);*/
 
         }
 
@@ -72,6 +64,24 @@ namespace Fogel
            
 
             return DataGrid;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+    
+            Grid DataGrid = CreateGridDynamic();
+            Grid.SetRow(DataGrid, 1);
+            Grid.SetColumnSpan(DataGrid, 2);
+            MainGrid.Children.Add(DataGrid);
+             minich = new MatrixN();
+            minich.TakeMatrixFromXML("C:\\Users\\bym20\\OneDrive\\Рабочий стол\\Fogel\\Matrix.xml");
+            MinCost.PutMatrixToGrid(DataGrid, minich);
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            MinCost min = new MinCost(minich, MainGrid);
+            min.SolveTask();
         }
     }
     

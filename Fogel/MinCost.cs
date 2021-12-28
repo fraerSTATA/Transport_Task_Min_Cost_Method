@@ -14,11 +14,16 @@ namespace Fogel
 {
     class MinCost : ILeastCostMethodSolve
     {
-         public int sum = 0;
+        Grid MainGrid;
+        public int sum = 0;
         MatrixN changedMatrix;
-        public MinCost() { }
+        MatrixN matrix;
+        private int iteration = 1;
         private Dictionary<KeyValuePair<int, int>, int> products = new Dictionary<KeyValuePair<int, int>, int>();
-        // private List<int> ColumnsDel = new List<int>;
+        Dictionary<int, int> rows; //текущие строки
+        Dictionary<int, int> columns; //текущие столбцы
+        Dictionary<KeyValuePair<int, int>, int> minValues; //минимальые значения найденные в матрице
+        public MinCost(MatrixN matrix, Grid MainGrid) { this.matrix = matrix; this.MainGrid = MainGrid; }
         public static void PutMatrixToGrid(Grid current, MatrixN matrix)
         {
 
@@ -55,8 +60,6 @@ namespace Fogel
 
                 Border c = CreatePost();
                 current.Children.RemoveAt(0);
-
-
                 Grid.SetColumn(c, 0);
                 Grid.SetRow(c, 0);
                 current.Children.Insert(0, c);
@@ -89,7 +92,7 @@ namespace Fogel
         }
 
 
-        public static KeyValuePair<int, int> GetMinElement(MatrixN matrix, int current, Dictionary<int, int> rows, Dictionary<int, int> columns)
+        public KeyValuePair<int, int> GetMinElement(int current)
         {
             KeyValuePair<int, int> minEl = new KeyValuePair<int, int>();
             int min = int.MaxValue; // батя ваерус
@@ -98,10 +101,10 @@ namespace Fogel
             {
                 foreach(var column in columns)
                 {
-                    if (min > matrix.getMatrix()[row.Key, column.Key] && matrix.getMatrix()[row.Key, column.Key] != 0
-                        || min > matrix.getMatrix()[row.Key, column.Key] && matrix.getMatrix()[row.Key, column.Key] == 0 && (columns.Count == 1 || rows.Count == 1))
+                    if (min > changedMatrix.getMatrix()[row.Key, column.Key] && changedMatrix.getMatrix()[row.Key, column.Key] != 0
+                        || min > changedMatrix.getMatrix()[row.Key, column.Key] && changedMatrix.getMatrix()[row.Key, column.Key] == 0 && (columns.Count == 1 || rows.Count == 1))
                     {
-                        min = matrix.getMatrix()[row.Key, column.Key];
+                        min = changedMatrix.getMatrix()[row.Key, column.Key];
                         minEl = new KeyValuePair<int, int>(row.Key, column.Key);
                     }
                     
@@ -111,57 +114,75 @@ namespace Fogel
             return minEl;
         }
       
-        public List<Grid> SolveTask(MatrixN matrix, MainWindow mainWindow)
+        public void SolveTask()
         {
      
-            List<Grid> grids = new List<Grid>();
-            Dictionary<int,int> rows = new Dictionary<int, int>(); //хранение не исключенных из итераций строк
-            Dictionary<int, int> columns = new Dictionary<int, int>(); //хранение не исключенных из итераций колонок
-            KeyValuePair<int, int> currentMin = getMin(matrix, rows, columns); //получение минимального блока для первой итерации;
-            Dictionary<KeyValuePair<int, int>, int> minValues = new Dictionary<KeyValuePair<int, int>, int>();
-            int columnsCount = matrix.getMatrix().GetLength(1);
-
+           // List<Grid> grids = new List<Grid>(); //таблицы для вывода
+            rows = new Dictionary<int, int>(); //хранение не исключенных из итераций строк
+            columns = new Dictionary<int, int>(); //хранение не исключенных из итераций колонок
+            KeyValuePair<int, int> currentMin = GetMin(matrix, rows, columns); //получение минимального блока для первой итерации;
+            minValues = new Dictionary<KeyValuePair<int, int>, int>();            
             changedMatrix = new MatrixN();
             changedMatrix.CopyMatrix(matrix); //матрица которая будет хранить измененные значения поставщиков и потребителей
 
-
-            while (rows.Count != 0 && columns.Count != 0)
+            while (rows.Count != 0 && columns.Count != 0) //пока все строки и колонки не удоволетворят потребности
             {
-                Grid a = CreateGridDynamic(mainWindow);
-                MinCost.PutMatrixToGrid(a, matrix);
-                int minBlock = getMinProduct(currentMin, changedMatrix, rows, columns); //получение значения продукта для распределения
-                minValues.Add(currentMin, minBlock);
                
-                           
-                currentMin = MinCost.GetMinElement(changedMatrix, changedMatrix.getMatrix()[currentMin.Key, currentMin.Value], rows,columns);
-
-                foreach(var item in minValues) {
-                    var smth = new TextBlockContent
-                    {
-                        Coef = matrix.getMatrix()[item.Key.Key, item.Key.Value],
-                        Product = item.Value
-                    };
-                    int position = ((item.Key.Key + 1) * columnsCount) - (columnsCount - item.Key.Value);//позиция в grid текущей минимальной ячейки
-                    Border txt3 = createStackPanel2(smth);
-                    a.Children.RemoveAt(position);
-                    Grid.SetColumn(txt3, item.Key.Value);
-                    Grid.SetRow(txt3, item.Key.Key);
-                    a.Children.Insert(position, txt3);
-                }
-
-                grids.Add(a);
-                
+                int minBlock = GetMinProduct(currentMin); //получение значения продукта для распределения
+                minValues.Add(currentMin, minBlock);                                      
+                currentMin = GetMinElement(changedMatrix.getMatrix()[currentMin.Key, currentMin.Value]);
+                AddMinValuesToGrid();
+                iteration++;
             }
+           
+                
+      }
 
+       protected void AddMinValuesToGrid()
+        {
+            Grid a = CreateGridDynamic();         
+            MinCost.PutMatrixToGrid(a, matrix);
+            int columnsCount = matrix.getMatrix().GetLength(1);
+            foreach (var item in minValues)
+            {
+                var smth = new TextBlockContent
+                {
+                    Coef = matrix.getMatrix()[item.Key.Key, item.Key.Value],
+                    Product = item.Value
+                };
+                int position = ((item.Key.Key + 1) * columnsCount) - (columnsCount - item.Key.Value);//позиция в grid текущей минимальной ячейки
+                Border txt3 = createStackPanel2(smth);
+                a.Children.RemoveAt(position);
+                Grid.SetColumn(txt3, item.Key.Value);
+                Grid.SetRow(txt3, item.Key.Key);
+                a.Children.Insert(position, txt3);
+            }
             foreach (var item in minValues)
             {
                 sum += item.Value * matrix.getMatrix()[item.Key.Key, item.Key.Value];
             }
-                return grids;
-      }
+            TextBlock textBlock = new TextBlock();
+            textBlock.Text = $"Шаг {iteration} Текущая сумма опорного плана = {sum}";
+            textBlock.FontSize = 20;
+            textBlock.Margin = new Thickness(50, 20, 20, 0);
+            sum = 0;
+          
 
-       
-        protected KeyValuePair<int, int> getMin(MatrixN matrix, Dictionary<int, int> rows, Dictionary<int, int> columns)
+            MainGrid.RowDefinitions.Add(new RowDefinition());
+            Grid.SetRow(a, iteration+1);
+            Grid.SetColumnSpan(a, 2);
+
+            MainGrid.RowDefinitions.Add(new RowDefinition());
+            Grid.SetRow(textBlock, iteration+1);
+            Grid.SetColumnSpan(textBlock, 2);
+
+            MainGrid.Children.Add(textBlock);
+            MainGrid.Children.Add(a);
+            
+            //  grids.Add(a);
+
+        }
+        protected KeyValuePair<int, int> GetMin(MatrixN matrix, Dictionary<int, int> rows, Dictionary<int, int> columns)
         {
             int min = matrix.getMatrix()[1, 1];
             KeyValuePair<int, int> minimum = new KeyValuePair<int, int>();
@@ -186,13 +207,13 @@ namespace Fogel
 
 
        
-        protected int getMinProduct(KeyValuePair<int, int> currentMin, MatrixN matrix, Dictionary<int, int> rows, Dictionary<int, int> columns)
+        protected int GetMinProduct(KeyValuePair<int, int> currentMin)
         {
-            if (matrix.getMatrix()[0, currentMin.Value] > matrix.getMatrix()[currentMin.Key, 0])
+            if (changedMatrix.getMatrix()[0, currentMin.Value] > changedMatrix.getMatrix()[currentMin.Key, 0])
             {
                 int minValue = matrix.getMatrix()[currentMin.Key, 0];
-                matrix.getMatrix()[0, currentMin.Value] = matrix.getMatrix()[0, currentMin.Value] - minValue;
-                if(matrix.getMatrix()[0, currentMin.Value] == 0)
+                changedMatrix.getMatrix()[0, currentMin.Value] = changedMatrix.getMatrix()[0, currentMin.Value] - minValue;
+                if(changedMatrix.getMatrix()[0, currentMin.Value] == 0)
                 {
                    for(int i = 0; i < columns.Count; i++)
                     {
@@ -200,8 +221,8 @@ namespace Fogel
                     }
                     columns.Remove(currentMin.Value);
                 }
-                matrix.getMatrix()[currentMin.Key, 0] = matrix.getMatrix()[currentMin.Key, 0] - minValue;
-                if (matrix.getMatrix()[currentMin.Key, 0] == 0)
+                changedMatrix.getMatrix()[currentMin.Key, 0] = changedMatrix.getMatrix()[currentMin.Key, 0] - minValue;
+                if (changedMatrix.getMatrix()[currentMin.Key, 0] == 0)
                 {
                   
                     rows.Remove(currentMin.Key);
@@ -210,15 +231,15 @@ namespace Fogel
             }
             else
             {
-                int minValue = matrix.getMatrix()[0, currentMin.Value];
-                matrix.getMatrix()[0, currentMin.Value] = matrix.getMatrix()[0, currentMin.Value] - minValue;
-                if (matrix.getMatrix()[0, currentMin.Value] == 0)
+                int minValue = changedMatrix.getMatrix()[0, currentMin.Value];
+                changedMatrix.getMatrix()[0, currentMin.Value] = changedMatrix.getMatrix()[0, currentMin.Value] - minValue;
+                if (changedMatrix.getMatrix()[0, currentMin.Value] == 0)
                 {
                 
                     columns.Remove(currentMin.Value);
                 }
-                matrix.getMatrix()[currentMin.Key, 0] = matrix.getMatrix()[currentMin.Key, 0] - minValue;
-                if (matrix.getMatrix()[currentMin.Key, 0] == 0)
+                changedMatrix.getMatrix()[currentMin.Key, 0] = changedMatrix.getMatrix()[currentMin.Key, 0] - minValue;
+                if (changedMatrix.getMatrix()[currentMin.Key, 0] == 0)
                 {                
                     rows.Remove(currentMin.Key);
                 }
@@ -226,7 +247,7 @@ namespace Fogel
             }
         }
 
-        public static Grid CreateGridDynamic(MainWindow a)
+        public static Grid CreateGridDynamic()
         {
             Grid DataGrid = new Grid();        
             DataGrid.Background = Brushes.White;

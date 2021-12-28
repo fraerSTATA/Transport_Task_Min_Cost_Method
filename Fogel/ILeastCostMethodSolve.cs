@@ -9,7 +9,7 @@ namespace Fogel
 {
     interface ILeastCostMethodSolve
     {
-        List<Grid> SolveTask(MatrixN matrix,MainWindow a);
+        void SolveTask();
         
     }
 }
