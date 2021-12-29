@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,31 +25,13 @@ namespace Fogel
     public partial class MainWindow : Window
     {
         MatrixN minich;
+        MinCost min;
         public MainWindow()
         {
 
 
             InitializeComponent();
 
-          
-            /*
-           foreach(var item in a)
-            {
-                j++;
-                MainGrid.RowDefinitions.Add(new RowDefinition());
-                Grid.SetRow(item, j);
-                Grid.SetColumnSpan(item, 2);
-                MainGrid.Children.Add(item);
-            }
-            j++;
-            MainGrid.RowDefinitions.Add(new RowDefinition());
-            Label b = new Label();
-            b.Content = "Итоговая сумма опорного плана = " + min.sum.ToString();
-            b.FontSize = 18;
-            b.Margin = new Thickness(50, 40, 0, 30);
-            Grid.SetRow(b, j);
-            Grid.SetColumnSpan(b, 2);
-            MainGrid.Children.Add(b);*/
 
         }
 
@@ -74,14 +58,45 @@ namespace Fogel
             Grid.SetColumnSpan(DataGrid, 2);
             MainGrid.Children.Add(DataGrid);
              minich = new MatrixN();
-            minich.TakeMatrixFromXML("C:\\Users\\bym20\\OneDrive\\Рабочий стол\\Fogel\\Matrix.xml");
+            string filePath = "";
+            var openFileDialog = new OpenFileDialog();
+            
+                
+                openFileDialog.Filter = "XML Files (*.xml)|*.xml";
+                openFileDialog.FilterIndex = 2;
+                openFileDialog.RestoreDirectory = true;
+
+            if (openFileDialog.ShowDialog().HasValue)
+            {
+                //Get the path of specified file
+                filePath = openFileDialog.FileName;
+            }
+            minich.TakeMatrixFromXML(filePath);
             MinCost.PutMatrixToGrid(DataGrid, minich);
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            MinCost min = new MinCost(minich, MainGrid);
+            min = new MinCost(minich, MainGrid);
             min.SolveTask();
+            MainGrid.RowDefinitions.Add(new RowDefinition());
+            Label b = new Label();
+            b.Content = "Итоговая стоимость опорного плана = " + min.FinalSum.ToString();
+            b.FontSize = 18;
+            b.Margin = new Thickness(50, 40, 0, 30);
+            Grid.SetRow(b, MainGrid.RowDefinitions.Count);
+            Grid.SetColumnSpan(b, 2);
+            MainGrid.Children.Add(b);
+            if (!min.IsDegenerate)
+            {
+                MessageBox.Show("Невырожденный опорный план");
+            }
+            else
+            {
+                MessageBox.Show("Вырожденный опорный план");
+            }
+            MethodOfPotentials a = new MethodOfPotentials(min);
+            a.OptimizePlan();
         }
     }
     

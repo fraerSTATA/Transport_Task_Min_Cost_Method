@@ -12,10 +12,11 @@ using System.Windows.Shapes;
 
 namespace Fogel
 {
-    class MinCost : ILeastCostMethodSolve
+    public class MinCost : ILeastCostMethodSolve
     {
         Grid MainGrid;
-        public int sum = 0;
+        private int finalSum= 0;
+        private int sum = 0;
         MatrixN changedMatrix;
         MatrixN matrix;
         private int iteration = 1;
@@ -23,6 +24,12 @@ namespace Fogel
         Dictionary<int, int> rows; //текущие строки
         Dictionary<int, int> columns; //текущие столбцы
         Dictionary<KeyValuePair<int, int>, int> minValues; //минимальые значения найденные в матрице
+        private bool isDegenerate = true;
+        public int FinalSum { get => finalSum; set => finalSum = value; }
+        public bool IsDegenerate { get => isDegenerate; private set => isDegenerate = value; }
+        public Dictionary<KeyValuePair<int, int>, int> MinValues { get => minValues; private set => minValues = value; }
+        public MatrixN Matrix { get => matrix; set => matrix = value; }
+
         public MinCost(MatrixN matrix, Grid MainGrid) { this.matrix = matrix; this.MainGrid = MainGrid; }
         public static void PutMatrixToGrid(Grid current, MatrixN matrix)
         {
@@ -134,6 +141,11 @@ namespace Fogel
                 AddMinValuesToGrid();
                 iteration++;
             }
+
+            if(minValues.Count == matrix.getMatrix().GetLength(0)-1 + matrix.getMatrix().GetLength(1)-1 - 1)
+            {
+                isDegenerate = false;
+            }
            
                 
       }
@@ -162,7 +174,8 @@ namespace Fogel
                 sum += item.Value * matrix.getMatrix()[item.Key.Key, item.Key.Value];
             }
             TextBlock textBlock = new TextBlock();
-            textBlock.Text = $"Шаг {iteration} Текущая сумма опорного плана = {sum}";
+            textBlock.Text = $"Шаг {iteration} - Текущая стоимость опорного плана => {sum}";
+            FinalSum = sum;
             textBlock.FontSize = 20;
             textBlock.Margin = new Thickness(50, 20, 20, 0);
             sum = 0;
@@ -179,7 +192,7 @@ namespace Fogel
             MainGrid.Children.Add(textBlock);
             MainGrid.Children.Add(a);
             
-            //  grids.Add(a);
+            
 
         }
         protected KeyValuePair<int, int> GetMin(MatrixN matrix, Dictionary<int, int> rows, Dictionary<int, int> columns)
